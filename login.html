@@ -1,0 +1,453 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">	
+	<title>阿里巴巴商学院电子商务实验室</title>
+	<meta name="keywords" content="登录界面" />
+	<meta name="description" content="登录界面" />
+	<link rel="stylesheet" href="css/style3.css" />
+	<link rel="stylesheet" href="css/icon.css" />
+	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.bootcss.com/vue-resource/1.5.1/vue-resource.js"></script>
+    <script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script>
+</head>
+
+<body>
+<div id="wrapper">
+	<div class="aw-login-box">
+    	<div class="box-bg-ys"></div>
+		<div class="mod-body clearfix">
+			<div class="content pull-left">
+				<h1 class="logo"><a href="#" @click="user_choose"></a></h1>				
+				<form id="login_form" method="post" onSubmit="return false" action="javascript:;">
+					<input type="hidden" name="return_url" value="0">
+					<ul>
+						<li>
+							<input type="text" id="aw-login-user-name" class="form-control" placeholder="用户名/邮箱/手机号" v-model="userName" v-if="seenUser">
+						</li>
+						<li>
+							<input type="password" id="aw-login-user-password" class="form-control" placeholder="密码" v-model="passWord" v-if="seenPassword">
+						</li>
+						<li>
+							<input type="text" id="aw-login-user-name" class="form-control" placeholder="请输入邮箱" v-model="email" v-if="seenEmail">
+						</li>
+					    <li>
+							<input type="text" id="aw-login-user-name" class="form-control" placeholder="请输入手机号" v-model="phone" v-if="seenPhone">
+						</li>
+                        <li>
+                        	<div v-if="seenIC">
+                        	<input type="text" id="aw-login-user-name" class="ic-control" placeholder="请输入验证码" v-model="IC"><a href="#" v-bind:class="{btn:this.loginClick , nobtn:!this.loginClick}" @click="select_IC">{{IC_login}}</a>
+                            </div>
+                        </li>
+						<li class="last">
+							<a href="#" class="pull-right btn btn-large btn-primary" id = "login" @click = "login" v-if="choose_User">登录</a>
+
+							<a href="#" class="pull-right btn btn-large btn-primary" id = "login" @click = "login_EmailPass" v-if="choose_Email">登录</a>
+
+							<a href="#" class="pull-right btn btn-large btn-primary" id = "login" @click = "login_PhonePass" v-if="choose_Phone">登录</a>
+							<label>
+								<input type="checkbox" value="1" name="net_auto_login">
+								记住我							</label>
+						     &nbsp;&nbsp;| <a href="javascript:;">&nbsp;&nbsp;忘记密码</a>
+						</li>
+					</ul>
+				</form>
+			</div>
+			<div class="side-bar pull-left">
+				<h3>快捷登录</h3>
+				<a href="javascript:;" class="btn btn-block btn-weibo" @click = "login_telIC"><i class="icon icon-phone"></i>短信登录 </a>
+				<a href="javascript:;" class="btn btn-block btn-qq" @click="login_emailIC"><i class="icon icon-inbox"></i> 邮箱登录</a>
+				<a href="javascript:;" class="btn btn-block btn-wechat"> <i class="icon icon-weibo"></i> 微博登录</a>
+			</div>
+		</div>
+		<div class="mod-footer">
+			<span>还没有账号?</span>&nbsp;&nbsp;
+			<a href="javascript:;" id="regist" @click="regist">立即注册</a>&nbsp;&nbsp;&nbsp;&nbsp;	
+		</div>
+	</div>
+</div>
+
+<script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+<script src="js/layui.all.js"></script>
+<script src="https://cdn.bootcss.com/jquery.serializeJSON/2.9.0/jquery.serializejson.js"></script>
+<script src="js/md5.js"></script>
+<script>
+    var IC_choose = "";
+    //格式验证
+    var resEmail = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/;
+	var resUserName= /^[a-zA-Z]\w{2,18}$/;
+    var resTel = /^1([38][0-9]|4[579]|5[0-3,5-9]|6[6]|7[0135678]|9[89])\d{8}$/;
+    var qc;
+
+    var login = new Vue({
+        
+        el: "#wrapper",
+
+        data:{
+             userName:'',
+             passWord:'',
+             IC:'',
+             IC_login:'',
+             email:'',
+             phone:'',
+             seenPassword:true,
+             seenIC:false,
+             seenEmail:false,
+             seenPhone:false,
+             seenUser:true,
+             choose_User:true,
+             choose_Email:false,
+             choose_Phone:false,
+             isDisabled:true,
+             loginClick:true,
+             totalTime:60,
+             clock:''
+        },
+
+        methods:{
+              
+              user_choose: function(){
+                     this.seenEmail = false;
+              	     this.seenUser = true;
+              	     this.seenPassword = true;
+              	     this.seenPhone = false;
+              	     this.seenIC = false;
+              	     this.userName = '';
+              	     this.passWord = '';
+              	     this.choose_User = true;
+              	     this.choose_Phone = false;
+              	     this.choose_Email = false;
+
+              },
+
+              login: function(){
+
+                    if(this.userName != "")
+                    {
+                    	if(resEmail.test(this.userName))
+                   		 {
+                       			this.login_email();
+                    	 }
+                    	else if(resTel.test(this.userName))
+                   		 {
+                     		   this.login_tel();
+                    	 }
+                    	else
+                    	{
+                       		   this.login_user();
+                    	}
+                   }
+                   else
+                   {
+                   	alert("用户名/邮箱/手机号不能为空!");
+                   }
+              },
+
+               //用户名密码登录;
+              login_user: function(){
+              		var username;
+               		var password;
+                	var secretPassword = hex_md5(this.passWord);
+                	var formdata = new FormData();
+                	formdata.append('username' , this.userName);
+                	formdata.append('password', secretPassword);
+                  formdata.append('role','experimenter')
+
+               		this.$http.post('http://172.17.65.58:8081/login/usernamePassword' , formdata)
+                    	.then(function (res){
+                             if(res.status == 200){
+                             	if(res.body){
+                             	     alert("登录成功!");
+                                 }
+                                 else{
+                                     alert("用户名或密码错误!");
+                                 }
+                     
+                             }
+                         }).catch(e => {
+              		// 打印一下错误
+              		console.log(e)
+                 	});
+              	},
+
+               //邮箱密码登录;
+              login_email: function(){				
+                    var email;
+                    var password;
+                    var emailData = new FormData();
+                    emailData.append('email',this.userName);
+                    emailData.append('password',this.passWord);
+
+                    this.$http.post('http://172.17.65.55:8080/login/EmailAndPassword' , emailData)
+                        .then(function (res){
+                             if(res.status == 200){
+                             	   if(res.body)
+                             	   {
+                                      alert("登录成功!");
+                                   }
+                                   else
+                                   {
+                                      alert("邮箱或密码错误!");
+                                   }
+                                   }
+                                 }).catch(e => {
+                               // 打印一下错误
+                              console.log(e)
+                           });   
+              },
+
+               //手机号密码登录;
+              login_tel: function(){
+              	    var phone;
+                    var password;
+                    var phoneData = new FormData();
+                    phoneData.append('phone',this.userName);
+                    phoneData.append('password',this.passWord);
+
+                    this.$http.post('http://172.17.65.55:8080/login/PhoneAndPassword' , phoneData)
+                        .then(function (res){
+                             if(res.status == 200){
+                                   if(res.body)
+                             	   {
+                                      alert("登录成功!");
+                                   }
+                                   else
+                                   {
+                                      alert("手机号或密码错误!");
+                                   }
+                                     }
+                                 }).catch(e => {
+                               // 打印一下错误
+                              console.log(e)
+                               });              
+
+              },
+                
+               //切换到邮箱验证码登录; 
+              login_emailIC: function(){
+              	     this.seenEmail = true;
+              	     this.seenUser = false;
+              	     this.seenPassword = false;
+              	     this.seenPhone = false;
+              	     this.seenIC = true;
+              	     this.email = "";
+              	     this.IC = "";
+              	     this.IC_login = "获取邮箱验证码";
+              	     this.choose_User = false;
+              	     this.choose_Phone = false;
+              	     this.choose_Email = true;
+                     IC_choose = "emailIC";
+                     window.clearInterval(this.clock);
+                     this.loginClick = true;
+                     
+              },
+
+              //切换到短信登录;
+              login_telIC: function(){
+              	     this.seenEmail = false;
+              	     this.seenUser = false;
+              	     this.seenPassword = false;
+              	     this.seenIC = true;
+              	     this.phone = "";
+              	     this.IC = "";
+              	     this.IC_login = "获取短信验证码";
+                     this.seenPhone = true;
+                     this.choose_User = false;
+              	     this.choose_Phone = true;
+              	     this.choose_Email = false;
+                     IC_choose = "phoneIC";
+                     window.clearInterval(this.clock);
+                     this.loginClick = true;
+              },
+
+              //邮箱验证码登录按钮绑定函数
+              login_EmailPass: function(){
+
+              	      if(this.email == "" || this.IC == "")
+              	      {
+              	      	alert("邮箱或者验证码不能为空!");
+              	      }
+              	      else
+              	      {
+                        if(this.IC == qc)
+                        {
+                             alert("登录成功!");
+                        }
+                        else
+                        {
+                        	alert("输入验证码有误!");
+                        } 
+                      }   
+              },
+
+              //手机号验证码登录按钮绑定函数
+              login_PhonePass: function(){
+              	      if(this.phone == "" || this.IC == "")
+              	      {
+              	      	alert("手机号或者验证码不能为空!");
+              	      }
+              	      else
+              	      {
+                        if(this.IC == qc)
+                        {
+                        	alert("登录成功!");
+                        }
+                        else
+                        {
+                        	alert("输入验证码有误!");
+                        }
+                      }
+              },
+          
+              //邮箱验证码登录
+              emailIC_login: function(){
+                     if(this.email != "" && resEmail.test(this.email))
+                     {
+                     	var ic;
+                     	this.loginClick = false;
+                        var email;
+                        var emailIC_Data = new FormData();
+                        emailIC_Data.append('email',this.email);
+
+                        this.$http.post('http://172.17.65.55:8080/login/EmailAndRandomNum' , emailIC_Data)
+                          .then(function (res){
+                             if(res.status == 200)
+                             {
+                                   if(res.body != "-1")
+                             	   {
+                             	   	  ic = res.body;
+                             	   	  qc = res.body;
+                                      if(ic != "-1")
+                        				{
+                                            this.setTimeEmail();
+                        				}
+                                   }
+                                   else
+                                   {
+                                      alert("邮箱未注册!");
+                        	          this.loginClick = true;
+                                     }   
+                             }
+                                 }).catch(e => {
+                               // 打印一下错误
+                              console.log(e)
+                               }); 
+                     }
+                     else
+                     {
+                     	alert("请输入正确的邮箱!");
+                     }
+              },
+              
+              //短信验证码登录
+              phoneIC_login: function(){
+              	    
+                     if(this.phone != "" && resTel.test(this.phone))
+                     {
+                     	var  ic;
+                     	this.loginClick = false;
+                        var phone;
+                        var phoneIC_Data = new FormData();
+                        phoneIC_Data.append('phone',this.phone);
+
+                        this.$http.post('http://172.17.65.55:8080/login/PhoneAndRandomNum' , phoneIC_Data)
+                          .then(function (res){
+                             if(res.status == 200)
+                             {
+                                   if(res.body != "-1")
+                             	   {
+                                       ic = res.body;
+                                       qc = res.body;
+
+                          			   if(ic != "-1")
+                        			{
+                                         this.setTimePhone();
+                           			}                                     
+                                   }
+                                   else
+                                   {
+                                      alert("手机号未注册!");
+                                      this.loginClick = true;
+                                   }
+                                     }
+                                 }).catch(e => {
+                               // 打印一下错误
+                              console.log(e)
+                               });             
+
+                     }
+                     else
+                     {
+                     	alert("请输入正确的手机号!");
+                     }
+              },
+
+              //获取验证码函数;
+              select_IC: function(){
+              	    if(IC_choose == "emailIC")
+              	    {
+
+              	    	this.emailIC_login();
+              	    }
+              	    else if(IC_choose == "phoneIC")
+              	    {
+              	    	this.phoneIC_login();
+              	    }
+              },
+
+              //跳转到注册页面;
+              regist: function(){
+              			layer.open({
+        							type: 2,
+        							title: '注册',
+        							maxmin: true,
+      								shadeClose: true, //点击遮罩关闭层
+      								area : ['38%' , '60%'],
+      								offset:'100px',
+      								content: 'regist.html'
+    					});
+              },
+
+              //邮箱验证码延时函数;
+              setTimeEmail: function(){
+                        	this.IC_login = '重新发送'+this.totalTime+'s';
+
+                        	this.clock = window.setInterval(()=>{
+                        	this.totalTime--;
+                        	this.IC_login = '重新发送'+this.totalTime+'s';
+                        	if(this.totalTime < 0||IC_choose != "emailIC")
+                        		{
+                        			window.clearInterval(this.clock);
+                        			this.IC_login = '获取邮箱验证码';
+                        			this.totalTime = 60;
+                        			this.loginClick = true;
+                        		}
+                       		 },1000);
+                  
+              },
+
+              //手机号验证码延时函数;
+              setTimePhone: function(){
+                        	this.IC_login = '重新发送'+this.totalTime+'s';
+
+                        	this.clock = window.setInterval(()=>{
+                        	this.totalTime--;
+                        	this.IC_login = '重新发送'+this.totalTime+'s';
+                        	if(this.totalTime < 0||IC_choose != "emailIC")
+                        		{
+                        			window.clearInterval(this.clock);
+                        			this.IC_login = '获取短信验证码';
+                        			this.totalTime = 60;
+                        			this.loginClick = true;
+                        		}
+                       		 },1000);              	
+              }
+        }
+
+    });
+
+</script>
+</body>
+</html>
